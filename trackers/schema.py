@@ -53,6 +53,7 @@ class TrackerSummary(BaseModel):
     start_date: DateType
     end_date: DateType
     status: TrackerStatus
+    is_pinned: bool = False
     habit_count: int
     completion_percent: float
     current_streak: int

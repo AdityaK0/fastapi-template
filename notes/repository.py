@@ -32,5 +32,7 @@ class NoteRepository:
         return note
 
     def delete(self, note: Note) -> None:
+        from datetime import datetime
         note.is_active = False
+        note.deleted_at = datetime.now()
         self.db.commit()

@@ -37,7 +37,9 @@ class TrackerRepository:
         return tracker
 
     def delete(self, tracker: Tracker) -> None:
+        from datetime import datetime
         tracker.is_active = False
+        tracker.deleted_at = datetime.now()
         self.db.commit()
 
     def sync_statuses(self) -> None:

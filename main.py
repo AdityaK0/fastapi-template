@@ -11,6 +11,7 @@ from users.api import auth_router, user_router
 from notes.api import notes_router
 from trackers.api import trackers_router
 from dashboard.api import dashboard_router
+from trash.api import trash_router
 from utils.exceptions import AppException
 from middleware.request_logging import RequestLoggingMiddleware
 from middleware.security import SecurityHeadersMiddleware
@@ -63,3 +64,4 @@ app.include_router(user_router)
 app.include_router(notes_router)
 app.include_router(trackers_router)
 app.include_router(dashboard_router)
+app.include_router(trash_router)

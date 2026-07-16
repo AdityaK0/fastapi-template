@@ -1,4 +1,5 @@
-from sqlalchemy import String, Text, Integer, ForeignKey, Boolean
+from datetime import datetime
+from sqlalchemy import String, Text, Integer, ForeignKey, Boolean, DateTime
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 from utils.models import BaseModel
 
@@ -12,3 +13,4 @@ class Note(BaseModel):
     content: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_pinned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_archived: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

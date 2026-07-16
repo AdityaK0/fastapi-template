@@ -1,5 +1,5 @@
-from datetime import date as DateType
-from sqlalchemy import String, Text, Integer, ForeignKey, Boolean, Date, Enum as SAEnum
+from datetime import date as DateType, datetime
+from sqlalchemy import String, Text, Integer, ForeignKey, Boolean, Date, DateTime, Enum as SAEnum
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 from utils.models import BaseModel
 import enum
@@ -27,6 +27,8 @@ class Tracker(BaseModel):
         default=TrackerStatus.upcoming,
         nullable=False,
     )
+    is_pinned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     habits: Mapped[list["TrackerHabit"]] = relationship(
         back_populates="tracker", cascade="all, delete", order_by="TrackerHabit.position"
