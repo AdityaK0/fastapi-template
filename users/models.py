@@ -1,6 +1,6 @@
 from utils.models import BaseModel
 from sqlalchemy.orm import mapped_column, Mapped, relationship
-from sqlalchemy import String, Integer, ForeignKey, DateTime, Table, Column
+from sqlalchemy import String, Integer, ForeignKey, DateTime, Table, Column, Text
 from datetime import datetime, timezone
 from database import Base
 
@@ -64,6 +64,15 @@ class User(BaseModel):
     phone_number: Mapped[str | None] = mapped_column(
         String(15), unique=True, nullable=True
     )
+
+    first_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    last_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    display_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    bio: Mapped[str | None] = mapped_column(Text, nullable=True)
+    website: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    location: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    avatar_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     sessions: Mapped[list["Session"]] = relationship(
         back_populates="user", cascade="all, delete"
