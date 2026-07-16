@@ -11,6 +11,7 @@ from database import Base
 from users import models  # noqa: F401
 from notes import models as note_models  # noqa: F401
 from trackers import models as tracker_models  # noqa: F401
+from events import models as event_models  # noqa: F401
 
 config = context.config
 db_url = settings.DATABASE_URL

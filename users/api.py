@@ -59,6 +59,21 @@ def login(command: LoginSchema, request: Request, db: Session = Depends(get_db))
     user.last_login = datetime.now()
     db.commit()
 
+    # Publish login event — only on successful auth
+    from events.publisher import publish_event
+    from events.enums import EventType, EntityType
+    publish_event(
+        db,
+        event_type=EventType.USER_LOGIN,
+        user_id=user.id,
+        entity_type=EntityType.USER,
+        entity_id=user.id,
+        metadata={
+            "ip": request.client.host if request.client else None,
+            "user_agent": request.headers.get("user-agent"),
+        },
+    )
+
     access_token = create_access_token(user.id)
     refresh_token = create_refresh_token()
     session = UserSession(
