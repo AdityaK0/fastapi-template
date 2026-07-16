@@ -56,6 +56,9 @@ def login(command: LoginSchema, request: Request, db: Session = Depends(get_db))
         from .exceptions import AppException
         raise AppException("Account is deactivated", status_code=401, error_code="ACCOUNT_DEACTIVATED")
 
+    user.last_login = datetime.now()
+    db.commit()
+
     access_token = create_access_token(user.id)
     refresh_token = create_refresh_token()
     session = UserSession(
@@ -101,7 +104,7 @@ def logout(body: dict, db: Session = Depends(get_db)):
     return {"message": "Logged out successfully"}
 
 
-@auth_router.get("/me", response_model=UserResponse)
+@auth_router.get("/me", response_model=FullProfileResponse)
 def me(current_user=Depends(get_current_user)):
     return current_user
 
