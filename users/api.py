@@ -31,6 +31,7 @@ def register(data: CreateUser, db: Session = Depends(get_db)):
     )
     db.add(session)
     db.commit()
+
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -59,19 +60,16 @@ def login(command: LoginSchema, request: Request, db: Session = Depends(get_db))
     user.last_login = datetime.now()
     db.commit()
 
-    # Publish login event — only on successful auth
-    from events.publisher import publish_event
-    from events.enums import EventType, EntityType
-    publish_event(
-        db,
-        event_type=EventType.USER_LOGIN,
-        user_id=user.id,
-        entity_type=EntityType.USER,
-        entity_id=user.id,
-        metadata={
-            "ip": request.client.host if request.client else None,
-            "user_agent": request.headers.get("user-agent"),
-        },
+    # Publish domain event — login endpoint knows nothing about what happens next
+    from events.publisher import publish
+    from events.domain_events import UserPresent
+    publish(
+        UserPresent(
+            user_id=user.id,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
+        ),
+        db=db,
     )
 
     access_token = create_access_token(user.id)
@@ -120,7 +118,7 @@ def logout(body: dict, db: Session = Depends(get_db)):
 
 
 @auth_router.get("/me", response_model=FullProfileResponse)
-def me(current_user=Depends(get_current_user)):
+def me(request:Request,current_user=Depends(get_current_user)):
     return current_user
 
 

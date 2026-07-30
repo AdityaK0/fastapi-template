@@ -80,5 +80,8 @@ class TrackerDetail(BaseModel):
     days_elapsed: int
     days_remaining: int
     created_at: datetime
+    # Immutable snapshot of all archived past days.
+    # Frontend reads history["days"][str(dayIndex)] for past rows.
+    history: dict = {}
 
     model_config = {"from_attributes": True}

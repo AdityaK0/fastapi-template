@@ -1,7 +1,8 @@
 from datetime import date as DateType, datetime
-from sqlalchemy import String, Text, Integer, ForeignKey, Boolean, Date, DateTime, Enum as SAEnum
+from sqlalchemy import String, Text, Integer, ForeignKey, Boolean, Date, DateTime, Enum as SAEnum, JSON
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 from utils.models import BaseModel
+from database import Base
 import enum
 
 
@@ -63,3 +64,41 @@ class TrackerProgress(BaseModel):
 
     tracker: Mapped["Tracker"] = relationship(back_populates="progress")
     habit: Mapped["TrackerHabit"] = relationship(back_populates="progress")
+
+
+class TrackerHistory(Base):
+    """
+    Immutable snapshot of all archived tracker days.
+
+    One row per tracker (UNIQUE on tracker_id).
+    The `snapshot` JSONB column holds the complete day-by-day history.
+    This is NOT a cache — once a day is written here it is never rewritten.
+
+    Snapshot schema (version 1):
+    {
+        "version": 1,
+        "tracker_id": 15,
+        "last_archived_day": 4,
+        "last_snapshot_at": "2026-07-25T00:00:00",
+        "days": {
+            "0": {
+                "date": "2026-07-21",
+                "completion": 100.0,
+                "completed": 2,
+                "missed": 0,
+                "habits": {"Morning": true, "Night": true},
+                "snapshot_created_at": "2026-07-22T00:00:00",
+                "last_updated_at": "2026-07-22T00:00:00"
+            }
+        }
+    }
+    """
+    __tablename__ = "tracker_history"
+
+    id:         Mapped[int]  = mapped_column(Integer, primary_key=True)
+    tracker_id: Mapped[int]  = mapped_column(
+        ForeignKey("trackers.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+    snapshot:   Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)

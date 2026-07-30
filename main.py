@@ -55,11 +55,22 @@ async def app_exception_handler(request: Request, exc: AppException):
     return _error_response(exc.status_code, exc.message, exc.error_code or "APP_ERROR")
 
 
-@app.get("/")
-def root():
+@app.get("/health")
+def healthCheck():
     return {"message": "Habit Tracker API v2.0 is running"}
 
 
+@app.on_event("startup")
+def checker():
+    try :
+        print("holla")
+    except Exception as e:
+        raise e
+        
+    
+
+
+        
 app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(notes_router)

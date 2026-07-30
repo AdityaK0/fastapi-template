@@ -40,6 +40,7 @@ def _compute_streak(progress_list: list[TrackerProgress], habit_ids: list[int], 
 
 class TrackerService:
     def __init__(self, db: Session):
+        self.db = db
         self.repo = TrackerRepository(db)
         self.habit_repo = TrackerHabitRepository(db)
         self.progress_repo = TrackerProgressRepository(db)
@@ -109,6 +110,7 @@ class TrackerService:
         self.repo.delete(tracker)
 
     def update_progress(self, tracker_id: int, user_id: int, day_index: int, habit_id: int, completed: bool) -> TrackerProgress:
+        from .history_service import TrackerHistoryService
         tracker = self.repo.get_by_id(tracker_id, user_id)
         if not tracker:
             raise AppException("Tracker not found", status_code=404, error_code="TRACKER_NOT_FOUND")
@@ -117,7 +119,16 @@ class TrackerService:
             raise AppException("Habit not found in this tracker", status_code=404, error_code="HABIT_NOT_FOUND")
         if day_index < 0 or day_index >= tracker.duration_days:
             raise AppException("Invalid day index", status_code=400, error_code="INVALID_DAY")
-        return self.progress_repo.upsert(tracker_id, day_index, habit_id, completed)
+
+        history_svc = TrackerHistoryService(self.db)
+        # Reject attempts to modify immutable past days
+        history_svc.validate_day_is_mutable(tracker, day_index)
+        # Save the progress
+        result = self.progress_repo.upsert(tracker_id, day_index, habit_id, completed)
+        # Archive any newly-passed days into the snapshot
+        self.db.refresh(tracker)
+        history_svc.archive_completed_days(tracker)
+        return result
 
     def _build_summary(self, tracker: Tracker) -> TrackerSummary:
         today = DateType.today()
@@ -153,6 +164,8 @@ class TrackerService:
         missed_cells = total_cells - completed_cells
         completion_percent = round((completed_cells / total_cells * 100) if total_cells > 0 else 0, 1)
         current_streak, longest_streak = _compute_streak(progress_list, habit_ids, days_elapsed)
+        from .history_service import TrackerHistoryService
+        history = TrackerHistoryService(self.db).get_snapshot(tracker.id)
         return TrackerDetail(
             id=tracker.id,
             name=tracker.name,
@@ -171,4 +184,5 @@ class TrackerService:
             days_elapsed=days_elapsed,
             days_remaining=days_remaining,
             created_at=tracker.created_at,
+            history=history,
         )
