@@ -1,11 +1,13 @@
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
+import secrets
 
-from .models import User
+from .models import User, Session as UserSession
 from .repository import UserRepository, RoleRepository, PermissionRepository
 from .session_service import SessionService
 from .exceptions import AppException
 from utils.security import hash_password, verify_password
+from .jwt_service import create_access_token, create_refresh_token
 
 
 class UserService:
@@ -132,3 +134,136 @@ class UserService:
             avatar_storage.delete(user.avatar_path)
         user.avatar_path = None
         return self.user_repo.update(user)
+    
+from config import settings
+
+class GoogleOAuthService:
+    
+    def __init__(self,db):
+        self.db = db
+        self.session_service = SessionService(db)
+        
+    GOOGLE_CLIENT_SECRET = settings.GOOGLE_CLIENT_SECRET
+    
+    async def google_redirect_url():
+        # state creation the state in which i requested like CSRF extra security
+        
+        state = secrets.token_urlsafe(32)
+        
+        params = {
+            "client_id": settings.GOOGLE_CLIENT_ID,
+            "redirect_uri": settings.GOOGLE_REDIRECT_URL,
+            "response_type": "code",
+            "scope": "openid email profile",
+            "state": state,
+            "prompt": "select_account",
+        }
+        
+        return f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
+        
+        
+    async def google_callback(code,request):
+        
+        token_url = "https://oauth2.googleapis.com/token"
+        token_payload = {
+            "client_id": settings.GOOGLE_CLIENT_ID,
+            "client_secret": settings.GOOGLE_CLIENT_SECRET,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": settings.GOOGLE_REDIRECT_URL,
+        }
+
+
+        async with httpx.AsyncClient() as client:
+                token_res = await client.post(token_url, data=token_payload)
+                
+                if token_res.status_code != 200:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Failed to exchange authorization code with Google.",
+                    )
+                    
+                access_token = token_res.json().get("access_token")
+
+                # 2. Fetch Profile details using Access Token
+                userinfo_res = await client.get(
+                    "https://www.googleapis.com/oauth2/v3/userinfo",
+                    headers={"Authorization": f"Bearer {access_token}"}
+                )
+                
+                if userinfo_res.status_code != 200:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Failed to retrieve user info from Google.",
+                    )
+
+                google_user = userinfo_res.json()
+
+            # Google payload fields mapping:
+            # google_user["sub"]         -> Unique identifier
+            # google_user["email"]       -> User email
+            # google_user["name"]        -> Full Name
+            # google_user["given_name"]  -> First Name
+            # google_user["family_name"] -> Last Name
+            # google_user["picture"]     -> Avatar URL
+
+        google_sub = google_user["sub"]
+        email = google_user["email"]
+
+        # 3. Account Lookup & Linking Strategy
+        user = self.db.query(User).filter(User.google_id == google_sub).first()
+
+        if not user:
+            # Check if an account with this email already exists
+            user = self.db.query(User).filter(User.email == email).first()
+
+            if user:
+                # Link Google ID to existing manual account
+                user.google_id = google_sub
+                if not user.avatar_path:
+                    user.avatar_path = google_user.get("picture")
+            else:
+                # Create a brand new user using mapped properties from your schema
+                user = User(
+                    google_id=google_sub,
+                    email=email,
+                    fullname=google_user.get("name", email.split("@")[0]),
+                    first_name=google_user.get("given_name"),
+                    last_name=google_user.get("family_name"),
+                    display_name=google_user.get("given_name") or google_user.get("name"),
+                    avatar_path=google_user.get("picture"),
+                    username=f"google_{google_sub[:8]}", # Generate default fallback username
+                )
+                self.db.add(user)
+
+        # 4. Update last_login timestamp
+        user.last_login = datetime.now(timezone.utc)
+        self.db.commit()
+        self.db.refresh(user)
+        
+        
+        access_token = create_access_token(user.id)
+        refresh_token = create_refresh_token()
+        
+        from datetime import datetime, timedelta, timezone
+        from .models import Session as UserSession
+        session = UserSession(
+            user_id=user.id,
+            refresh_token_hash=hash_session_token(refresh_token),
+            expires_at=datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
+        )
+        db.add(session)
+        db.commit()    
+        
+
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "fullname": user.fullname,
+                "email": user.email,
+            },
+        }

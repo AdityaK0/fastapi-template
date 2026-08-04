@@ -53,13 +53,15 @@ class User(BaseModel):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
-    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=True)
 
     fullname: Mapped[str] = mapped_column(String(200), nullable=False)
 
     email: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
 
-    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=True)
+    
+    google_id: Mapped[str | None] = mapped_column(String(255), unique=True, index=True, nullable=True)
 
     phone_number: Mapped[str | None] = mapped_column(
         String(15), unique=True, nullable=True

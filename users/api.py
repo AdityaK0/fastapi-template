@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, Request, File, UploadFile
 from sqlalchemy.orm import Session
-
+from fastapi.responses import RedirectResponse
 from database import get_db
 from config import settings
 from .schema import CreateUser, LoginSchema, UpdateProfileSchema, ChangePasswordSchema, UserResponse, ProfileUpdateSchema, FullProfileResponse
-from .service import UserService
+from .service import UserService,GoogleOAuthService
 from .dependencies import get_current_user, require_permission
 from .permissions import USER_UPDATE, USER_DEACTIVATE, ROLE_ASSIGN
 from .jwt_service import create_access_token, create_refresh_token
@@ -122,6 +122,24 @@ def me(request:Request,current_user=Depends(get_current_user)):
     return current_user
 
 
+
+@auth_router.get("/google/login")
+async def google_login():
+    # redirect user to google consent screen where he/she can see like which google account to choose and all
+    
+    redirect_url = await GoogleOAuthService.google_redirect_url()
+    
+    return RedirectResponse(redirect_url)
+
+
+@auth_router.get("/google/callback")
+async def google_callback(code:str,request: Request,db:Session = Depends(get_db)):
+    
+    response = await GoogleOAuthService(db).google_callback(code,request)
+    
+    return response
+
+
 # Keep backward-compatible user management endpoints
 @user_router.patch("/profile")
 def update_profile(data: UpdateProfileSchema, current_user=Depends(require_permission(USER_UPDATE)), db: Session = Depends(get_db)):
@@ -177,3 +195,5 @@ def delete_avatar(
     db: Session = Depends(get_db),
 ):
     return UserService(db).delete_avatar(current_user)
+
+
