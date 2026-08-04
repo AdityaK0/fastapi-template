@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Request, File, UploadFile
+from urllib.parse import urlencode
+from fastapi import APIRouter, Depends, Request, File, UploadFile, HTTPException
 from sqlalchemy.orm import Session
 from fastapi.responses import RedirectResponse
 from database import get_db
@@ -133,11 +134,20 @@ async def google_login():
 
 
 @auth_router.get("/google/callback")
-async def google_callback(code:str,request: Request,db:Session = Depends(get_db)):
-    
-    response = await GoogleOAuthService(db).google_callback(code,request)
-    
-    return response
+async def google_callback(code: str, request: Request, db: Session = Depends(get_db)):
+    # Google lands the browser here as a top-level navigation, so this must
+    # redirect to the SPA rather than return JSON — the frontend can't read
+    # a fetch/axios response it never made.
+    try:
+        result = await GoogleOAuthService(db).google_callback(code)
+    except HTTPException:
+        return RedirectResponse(f"{settings.FRONTEND_URL}/login?error=google_auth_failed")
+
+    query = urlencode({
+        "access_token": result["access_token"],
+        "refresh_token": result["refresh_token"],
+    })
+    return RedirectResponse(f"{settings.FRONTEND_URL}/auth/success?{query}")
 
 
 # Keep backward-compatible user management endpoints

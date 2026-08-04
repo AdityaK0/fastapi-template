@@ -1,12 +1,14 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 import secrets
-
+from urllib.parse import urlencode
+import httpx
+from fastapi import HTTPException, status
 from .models import User, Session as UserSession
 from .repository import UserRepository, RoleRepository, PermissionRepository
 from .session_service import SessionService
 from .exceptions import AppException
-from utils.security import hash_password, verify_password
+from utils.security import hash_password, verify_password, hash_session_token
 from .jwt_service import create_access_token, create_refresh_token
 
 
@@ -162,7 +164,7 @@ class GoogleOAuthService:
         return f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
         
         
-    async def google_callback(code,request):
+    async def google_callback(self, code):
         
         token_url = "https://oauth2.googleapis.com/token"
         token_payload = {
@@ -244,16 +246,14 @@ class GoogleOAuthService:
         
         access_token = create_access_token(user.id)
         refresh_token = create_refresh_token()
-        
-        from datetime import datetime, timedelta, timezone
-        from .models import Session as UserSession
+
         session = UserSession(
             user_id=user.id,
             refresh_token_hash=hash_session_token(refresh_token),
             expires_at=datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
         )
-        db.add(session)
-        db.commit()    
+        self.db.add(session)
+        self.db.commit()
         
 
         return {

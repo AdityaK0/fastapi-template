@@ -17,7 +17,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
-    
+    FRONTEND_URL: str = "http://localhost:5173"
+
     
     GOOGLE_AUTH_URL: str = "https://accounts.google.com/o/oauth2/v2/auth"
     GOOGLE_REDIRECT_URL: str = "http://localhost:8001/auth/google/callback"
