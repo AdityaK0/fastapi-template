@@ -70,6 +70,7 @@ class TrackerDetail(BaseModel):
     start_date: DateType
     end_date: DateType
     status: TrackerStatus
+    is_pinned: bool = False
     habits: list[HabitResponse]
     progress: list[ProgressResponse]
     completion_percent: float
