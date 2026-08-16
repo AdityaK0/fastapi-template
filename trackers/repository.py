@@ -1,6 +1,6 @@
 from datetime import date as DateType
 from sqlalchemy.orm import Session
-from sqlalchemy import select, and_
+from sqlalchemy import select
 
 from .models import Tracker, TrackerHabit, TrackerProgress, TrackerStatus
 
@@ -58,6 +58,20 @@ class TrackerRepository:
             else:
                 t.status = TrackerStatus.active
         self.db.commit()
+
+    def set_day_note(self, tracker_id: int, user_id: int, day_index: int, content: str) -> Tracker:
+        tracker = self.get_by_id(tracker_id, user_id)
+        if not tracker:
+            return None
+        notes = dict(tracker.day_notes or {})
+        if content.strip():
+            notes[str(day_index)] = content
+        else:
+            notes.pop(str(day_index), None)
+        tracker.day_notes = notes
+        self.db.commit()
+        self.db.refresh(tracker)
+        return tracker
 
 
 class TrackerHabitRepository:

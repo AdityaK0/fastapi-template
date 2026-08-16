@@ -84,5 +84,7 @@ class TrackerDetail(BaseModel):
     # Immutable snapshot of all archived past days.
     # Frontend reads history["days"][str(dayIndex)] for past rows.
     history: dict = {}
+    # Per-day reflection notes. Keys are str(day_index), values are note text.
+    day_notes: dict = {}
 
     model_config = {"from_attributes": True}

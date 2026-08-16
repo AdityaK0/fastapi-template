@@ -29,6 +29,8 @@ class Tracker(BaseModel):
         nullable=False,
     )
     is_pinned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # JSONB dict keyed by str(day_index) → note text. e.g. {"0": "good day", "3": "tough"}
+    day_notes: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     habits: Mapped[list["TrackerHabit"]] = relationship(

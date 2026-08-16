@@ -187,4 +187,5 @@ class TrackerService:
             days_remaining=days_remaining,
             created_at=tracker.created_at,
             history=history,
+            day_notes=tracker.day_notes or {},
         )
