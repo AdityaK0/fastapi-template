@@ -9,3 +9,5 @@ pydantic-settings
 python-dotenv
 python-jose[cryptography]
 python-multipart
+httpx
+anthropic>=1.9,<2

@@ -31,6 +31,22 @@ class TrackerUpdate(BaseModel):
     status: TrackerStatus | None = None
 
 
+class HabitStructureItem(BaseModel):
+    habit_id: int
+    name: str = Field(..., min_length=1, max_length=200)
+
+
+class TrackerStructureUpdate(BaseModel):
+    """Rename the tracker and rename, reorder or remove its habits.
+
+    `habits` is the complete ordered list of habits to keep. Adding habits is
+    not supported because past days are locked.
+    """
+    name: str | None = Field(None, min_length=1, max_length=200)
+    description: str | None = Field(None, max_length=1000)
+    habits: list[HabitStructureItem] = Field(..., min_length=1, max_length=50)
+
+
 class ProgressUpdate(BaseModel):
     day_index: int = Field(..., ge=0)
     habit_id: int

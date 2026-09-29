@@ -109,6 +109,47 @@ class TrackerService:
             raise AppException("Tracker not found", status_code=404, error_code="TRACKER_NOT_FOUND")
         self.repo.delete(tracker)
 
+    def revise_structure(self, tracker_id: int, user_id: int, data) -> Tracker:
+        """
+        Apply a TrackerStructureUpdate: rename the tracker, and rename, reorder
+        or remove habits. Habits left out of `data.habits` are deleted along
+        with their check-ins, so stats are recomputed over the remaining habits.
+
+        Finished days are archived into the history snapshot first, so the
+        immutable record still shows what happened with the removed habits.
+        """
+        from .history_service import TrackerHistoryService
+        tracker = self.repo.get_by_id(tracker_id, user_id)
+        if not tracker:
+            raise AppException("Tracker not found", status_code=404, error_code="TRACKER_NOT_FOUND")
+
+        existing = {h.id: h for h in tracker.habits}
+        keep_ids = [item.habit_id for item in data.habits]
+        if any(habit_id not in existing for habit_id in keep_ids):
+            raise AppException("Habit not found in this tracker", status_code=404, error_code="HABIT_NOT_FOUND")
+        if len(set(keep_ids)) != len(keep_ids):
+            raise AppException("Each habit can only appear once", status_code=422, error_code="DUPLICATE_HABIT")
+        names = [item.name.strip() for item in data.habits]
+        if any(not name for name in names):
+            raise AppException("Habit names can't be empty", status_code=422, error_code="INVALID_HABIT_NAME")
+        # History snapshots key days by habit name, so names must stay unique.
+        if len({name.lower() for name in names}) != len(names):
+            raise AppException("Habit names must be unique", status_code=422, error_code="DUPLICATE_HABIT_NAME")
+
+        TrackerHistoryService(self.db).archive_completed_days(tracker)
+
+        for habit_id, habit in existing.items():
+            if habit_id not in keep_ids:
+                self.db.delete(habit)
+        for position, (habit_id, name) in enumerate(zip(keep_ids, names)):
+            existing[habit_id].name = name
+            existing[habit_id].position = position
+        if data.name is not None and data.name.strip():
+            tracker.name = data.name.strip()
+        if data.description is not None:
+            tracker.description = data.description.strip() or None
+        return self.repo.update(tracker)
+
     def update_progress(self, tracker_id: int, user_id: int, day_index: int, habit_id: int, completed: bool) -> TrackerProgress:
         from .history_service import TrackerHistoryService
         tracker = self.repo.get_by_id(tracker_id, user_id)
