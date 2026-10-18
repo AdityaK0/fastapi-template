@@ -1,5 +1,5 @@
 """
-All domain events for HabitFlow.
+All domain events for Habbit Tracker.
 
 Convention:
     - Past-tense noun phrase: UserPresent, TrackerCompleted, HabitChecked.

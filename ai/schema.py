@@ -82,10 +82,18 @@ class ConfirmResponse(BaseModel):
     conversation: ConversationOut
 
 
+class AIProviderOut(BaseModel):
+    id: str
+    label: str
+    model: str
+    family: str
+
+
 class AIConfigOut(BaseModel):
     enabled: bool
     provider: str | None
     model: str | None
+    providers: list[AIProviderOut] = []
 
 
 def conversation_out(conversation: AIConversation) -> ConversationOut:

@@ -32,7 +32,7 @@ def seed():
         existing_notes = db.query(Note).filter_by(user_id=user.id).count()
         if existing_notes == 0:
             notes = [
-                Note(user_id=user.id, title="Welcome to Habit Tracker!", content="Start building good habits today. Create your first tracker from the dashboard.", is_pinned=True),
+                Note(user_id=user.id, title="Welcome to Habbit Tracker!", content="Start building good habits today. Create your first tracker from the dashboard.", is_pinned=True),
                 Note(user_id=user.id, title="75 Hard Rules", content="1. Follow a diet\n2. Two 45-min workouts\n3. Drink 1 gallon water\n4. Read 10 pages\n5. Take a progress photo"),
                 Note(user_id=user.id, title="Morning Routine Tips", content="Wake up at the same time every day. Avoid phone for first 30 minutes. Drink water before coffee."),
             ]

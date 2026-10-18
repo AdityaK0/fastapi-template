@@ -11,4 +11,5 @@ python-jose[cryptography]
 python-multipart
 httpx
 anthropic>=1.9,<2
+google-genai>=2,<3
 # "psycopg[binary]" 

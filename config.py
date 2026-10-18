@@ -30,10 +30,14 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str | None = None
     GOOGLE_CLIENT_SECRET: str | None = None
 
-    # AI assistant. Off until AI_API_KEY is set; the key is only ever used server-side.
-    AI_PROVIDER: str = "anthropic"            # "anthropic" or "disabled"
-    AI_API_KEY: str | None = None
-    AI_MODEL: str = "claude-opus-5"
+    # AI assistant. Configure one or more providers in AI_PROVIDERS (see
+    # ai/providers/registry.py); the legacy single-provider settings below are
+    # used only when AI_PROVIDERS is empty. Keys are only ever used server-side.
+    AI_PROVIDERS: str = ""                    # "id|model|api_key|base_url" entries, newline/;/,-separated
+    AI_PROVIDER: str = "anthropic"            # legacy: "anthropic", "gemini", or "disabled"
+    AI_API_KEY: str | None = None             # legacy single key
+    AI_MODEL: str | None = None               # legacy; unset = the provider's default model
+    AI_FALLBACK_ON_ERROR: bool = True         # try the next provider when one fails
     AI_MAX_OUTPUT_TOKENS: int = 16000         # per model call, thinking included
     AI_EFFORT: str | None = None              # low | medium | high | xhigh | max; unset = model default
     # Only for models that still accept sampling parameters (Opus 4.7+ rejects them).
@@ -58,8 +62,19 @@ class Settings(BaseSettings):
         return [o.strip() for o in self.CORS_ORIGINS.split(",")]
 
     @property
+    def ai_provider_entries(self) -> list:
+        # Imported lazily: ai/__init__ imports the ORM models, which import config.
+        from ai.providers.registry import parse_provider_entries
+        return parse_provider_entries(
+            self.AI_PROVIDERS,
+            legacy_provider=self.AI_PROVIDER,
+            legacy_key=self.AI_API_KEY,
+            legacy_model=self.AI_MODEL,
+        )
+
+    @property
     def ai_enabled(self) -> bool:
-        return self.AI_PROVIDER != "disabled" and bool(self.AI_API_KEY)
+        return bool(self.ai_provider_entries)
 
 
 settings = Settings()

@@ -27,7 +27,7 @@ logging.basicConfig(
 )
 
 app = FastAPI(
-    title="Habit Tracker & Notes API",
+    title="Habbit Tracker & Notes API",
     description="Full-stack habit tracker with notes, JWT authentication, and RBAC.",
     version="2.0.0",
 )
@@ -85,7 +85,7 @@ async def database_exception_handler(request: Request, exc: SQLAlchemyError):
 
 @app.get("/health")
 def healthCheck():
-    return {"message": "Habit Tracker API v2.0 is running"}
+    return {"message": "Habbit Tracker API v2.0 is running"}
 
 
 @app.on_event("startup")

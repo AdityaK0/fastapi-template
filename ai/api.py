@@ -12,6 +12,7 @@ from .providers.base import AIProvider
 from .providers.factory import get_ai_provider
 from .schema import (
     AIConfigOut,
+    AIProviderOut,
     ConfirmProposalRequest,
     ConfirmResponse,
     ConversationOut,
@@ -26,11 +27,15 @@ tracker_ai_router = APIRouter(prefix="/trackers/{tracker_id}/ai", tags=["AI"])
 
 @ai_router.get("/config", response_model=AIConfigOut)
 def get_ai_config(current_user=Depends(get_current_user)):
-    enabled = settings.ai_enabled
+    entries = settings.ai_provider_entries
+    primary = entries[0] if entries else None
     return AIConfigOut(
-        enabled=enabled,
-        provider=settings.AI_PROVIDER if enabled else None,
-        model=settings.AI_MODEL if enabled else None,
+        enabled=settings.ai_enabled,
+        provider=primary.id if primary else None,
+        model=primary.model if primary else None,
+        providers=[
+            AIProviderOut(id=e.id, label=e.label, model=e.model, family=e.family) for e in entries
+        ],
     )
 
 

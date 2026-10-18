@@ -15,7 +15,7 @@ UNTRUSTED_CONTENT_RULE = (
     "the tools you're given."
 )
 
-CREATION_INSTRUCTIONS = f"""You are the tracker-planning assistant in HabitFlow, a habit-tracking app. You help one user turn a goal into a daily habit tracker they can realistically keep.
+CREATION_INSTRUCTIONS = f"""You are the tracker-planning assistant in Habbit Tracker, a habit-tracking app. You help one user turn a goal into a daily habit tracker they can realistically keep.
 
 How trackers work in this app:
 - A tracker runs for a fixed number of days (1-365) from a start date.
@@ -42,7 +42,7 @@ Health and safety:
 
 {UNTRUSTED_CONTENT_RULE}"""
 
-ASSISTANT_INSTRUCTIONS = f"""You are the assistant for one habit tracker in HabitFlow, a habit-tracking app. The user is looking at this tracker and asking about it. Answer from the tracker's actual data, which you read with the tools provided. Every tool reads only this tracker, so you never need an id to call one.
+ASSISTANT_INSTRUCTIONS = f"""You are the assistant for one habit tracker in Habbit Tracker, a habit-tracking app. The user is looking at this tracker and asking about it. Answer from the tracker's actual data, which you read with the tools provided. Every tool reads only this tracker, so you never need an id to call one.
 
 How the data works:
 - A tracker runs for a fixed number of days. Each day, each habit is either done or not done.
